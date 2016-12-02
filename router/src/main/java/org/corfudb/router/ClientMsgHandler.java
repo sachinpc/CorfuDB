@@ -17,18 +17,8 @@ import java.util.function.Function;
 /**
  * Created by mwei on 11/23/16.
  */
-public class ClientMsgHandler<M extends IRoutableMsg<T>, T> {
-
-    public interface Handler<M> {
-        M handle(M CorfuMsg, IChannel<M> channel);
-    }
-
-    public interface VoidHandler<M> {
-        void handle(M msg, IChannel<M> channel);
-    }
-
-    /** The handler map. */
-    private Map<T, Handler<M>> handlerMap;
+public class ClientMsgHandler<M extends IRoutableMsg<T>, T>
+    extends AbstractMsgHandler<M,T> {
 
     /** The client. */
     private AbstractClient client;
@@ -36,19 +26,6 @@ public class ClientMsgHandler<M extends IRoutableMsg<T>, T> {
     /** Construct a new instance of ClientMsgHandler. */
     public ClientMsgHandler(AbstractClient client) {
         this.client = client;
-        handlerMap = new ConcurrentHashMap<>();
-    }
-
-    /** Add a handler to this message handler.
-     *
-     * @param messageType       The type of CorfuMsg this handler will handle.
-     * @param handler           The handler itself.
-     * @return                  This handler, to support chaining.
-     */
-    public ClientMsgHandler<M,T>
-    addHandler(T messageType, ClientMsgHandler.Handler<M> handler) {
-        handlerMap.put(messageType, handler);
-        return this;
     }
 
     /** Handle an incoming message.
@@ -68,75 +45,32 @@ public class ClientMsgHandler<M extends IRoutableMsg<T>, T> {
     }
 
 
-    /** Generate handlers for a particular client.
+    /**
+     * Add a handler to this message handler.
      *
-     * @param caller    The context that is being used. Call MethodHandles.lookup() to obtain.
-     * @param o         The object that implements the client.
-     * @return
+     * @param messageType The type of CorfuMsg this handler will handle.
+     * @param handler     The handler itself.
+     * @return This handler, to support chaining.
      */
-    public <A extends Annotation> ClientMsgHandler<M,T>
-    generateHandlers(final MethodHandles.Lookup caller, final Object o, Class<A> annotationType,
-                      Function<A,T> typeFromAnnoationFn) {
-        Arrays.stream(o.getClass().getDeclaredMethods())
-                .filter(x -> x.isAnnotationPresent(annotationType))
-                .forEach(x -> {
-                    A a = x.getAnnotation(annotationType);
-                    T type = typeFromAnnoationFn.apply(a);
-                    // convert the method into a Java8 Lambda for maximum execution speed...
-                    try {
-                        if (Modifier.isStatic(x.getModifiers())) {
-                            MethodHandle mh = caller.unreflect(x);
-                            MethodType mt = mh.type().changeParameterType(0, Object.class);
-                            if (mt.returnType().equals(Void.TYPE)) {
-                                VoidHandler<M> vh = (VoidHandler<M>) LambdaMetafactory.metafactory(caller,
-                                        "handle", MethodType.methodType(VoidHandler.class),
-                                        mt, mh, mh.type())
-                                        .getTarget().invokeExact();
-                                handlerMap.put(type, (M msg, IChannel<M> ctx) -> {
-                                    vh.handle(msg, ctx);
-                                    return null;
-                                });
-                            } else {
-                                mt = mt.changeReturnType(Object.class);
-                                handlerMap.put(type, (Handler) LambdaMetafactory.metafactory(caller,
-                                        "handle", MethodType.methodType(Handler.class),
-                                        mt, mh, mh.type())
-                                        .getTarget().invokeExact());
-                            }
-                        } else {
-                            // instance method, so we need to capture the type.
-                            MethodType mt = MethodType.methodType(x.getReturnType(), x.getParameterTypes());
-                            MethodHandle mh = caller.findVirtual(o.getClass(), x.getName(), mt);
-                            MethodType mtGeneric = mh.type().changeParameterType(1, Object.class);
-                            if (mt.returnType().equals(Void.TYPE)) {
-                                VoidHandler<M> vh = (VoidHandler<M>) LambdaMetafactory.metafactory(caller,
-                                        "handle", MethodType.methodType(VoidHandler.class, o.getClass()),
-                                        mtGeneric.dropParameterTypes(0,1), mh, mh.type().dropParameterTypes(0,1))
-                                        .getTarget().bindTo(o).invoke();
-                                handlerMap.put(type, (M msg, IChannel<M> ctx) -> {
-                                    vh.handle(msg, ctx);
-                                    return null;
-                                });
-                            } else {
-                                mt = mt.changeReturnType(Object.class);
-                                mtGeneric = mtGeneric.changeReturnType(Object.class);
-                                handlerMap.put(type, (Handler) LambdaMetafactory.metafactory(caller,
-                                        "handle", MethodType.methodType(Handler.class, o.getClass()),
-                                        mtGeneric.dropParameterTypes(0,1), mh, mh.type().dropParameterTypes(0,1))
-                                        .getTarget().bindTo(o).invoke());
-                            }
-                        }
-                    } catch (Throwable e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+    @Override
+    public AbstractMsgHandler<M, T> addHandler(T messageType, Handler handler) {
+        super.addHandler(messageType, handler);
         return this;
     }
-    /** Get the types this handler will handle.
+
+    /**
+     * Generate handlers for a particular client.
      *
-     * @return  The types this handler will handle.
+     * @param caller              The context that is being used. Call MethodHandles.lookup() to obtain.
+     * @param o                   The object that implements the client.
+     * @param annotationType
+     * @param typeFromAnnoationFn @return
      */
-    public Set<T> getHandledTypes() {
-        return handlerMap.keySet();
+    @Override
+    public <A extends Annotation> ClientMsgHandler<M,T> generateHandlers(MethodHandles.Lookup caller, Object o, Class<A> annotationType, Function<A, T> typeFromAnnoationFn) {
+        super.generateHandlers(caller, o, annotationType, typeFromAnnoationFn);
+        return this;
     }
+
+
 }

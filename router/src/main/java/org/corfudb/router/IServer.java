@@ -18,7 +18,7 @@ public interface IServer<M extends IRoutableMsg<T>, T> {
      * @param msg An incoming message.
      * @param ctx The channel handler context.
      */
-    default void handleMessage(M msg, ChannelHandlerContext ctx) {
+    default void handleMessage(M msg, IChannel<M> ctx) {
         getMsgHandler().handle(msg, ctx);
     }
 

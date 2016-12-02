@@ -178,8 +178,7 @@ public class SequencerServer extends AbstractEpochedServer {
         return commit.get();
     }
 
-    public void returnLatestOffsets(CorfuPayloadMsg<TokenRequest> msg,
-                                    ChannelHandlerContext ctx, IServerRouter r) {
+    private CorfuMsg returnLatestOffsets(CorfuPayloadMsg<TokenRequest> msg) {
         TokenRequest req = msg.getPayload();
 
         long maxStreamGlobalTails = -1L;
@@ -203,39 +202,36 @@ public class SequencerServer extends AbstractEpochedServer {
 
         // If no streams are specified in the request, this value returns the last global token issued.
         long responseGlobalTail = (req.getStreams().size() == 0) ? globalLogTail.get() - 1 : maxStreamGlobalTails;
-        r.sendResponse(ctx, msg, CorfuMsgType.TOKEN_RESPONSE.payloadMsg(
-                new TokenResponse(responseGlobalTail, Collections.emptyMap(), responseStreamTails.build())));
+        return CorfuMsgType.TOKEN_RESPONSE.payloadMsg(
+                new TokenResponse(responseGlobalTail, Collections.emptyMap(), responseStreamTails.build()));
     }
 
     /**
      * Service an incoming token request.
      */
     @ServerHandler(type=CorfuMsgType.TOKEN_REQUEST)
-    public synchronized void tokenRequest(CorfuPayloadMsg<TokenRequest> msg,
-                                          ChannelHandlerContext ctx, IServerRouter r) {
+    public synchronized CorfuMsg tokenRequest(CorfuPayloadMsg<TokenRequest> msg,
+                                              IChannel<CorfuMsg> channel) {
         TokenRequest req = msg.getPayload();
         log.trace("req txn reso: {}", req.getTxnResolution());
 
         // if requested number of tokens is zero, it is just a query of current tail(s)
         if (req.getNumTokens() == 0) {
-            returnLatestOffsets(msg, ctx, r);
-            return;
+            return returnLatestOffsets(msg);
         }
 
         // if no streams, simply allocate a position at the tail of the global log
         if (req.getStreams() == null) {
-            r.sendResponse(ctx, msg, CorfuMsgType.TOKEN_RESPONSE.payloadMsg(
-                    new TokenResponse(globalLogTail.getAndAdd(req.getNumTokens()), Collections.emptyMap(), Collections.emptyMap())));
-            return;
+            return CorfuMsgType.TOKEN_RESPONSE.payloadMsg(
+                    new TokenResponse(globalLogTail.getAndAdd(req.getNumTokens()), Collections.emptyMap(), Collections.emptyMap()));
         }
 
         // If the request is a transaction resolution request, then check if it should abort.
         if (req.getTxnResolution()) {
             if (!txnResolution(req.getReadTimestamp(), req.getReadSet())) {
                 // If the txn aborts, then DO NOT hand out a token.
-                r.sendResponse(ctx, msg, CorfuMsgType.TOKEN_RESPONSE.payloadMsg(
-                        new TokenResponse(-1L, Collections.emptyMap(), Collections.emptyMap())));
-                return;
+                return CorfuMsgType.TOKEN_RESPONSE.payloadMsg(
+                        new TokenResponse(-1L, Collections.emptyMap(), Collections.emptyMap()));
             }
         }
 
@@ -284,10 +280,10 @@ public class SequencerServer extends AbstractEpochedServer {
             }
         }
 
-        r.sendResponse(ctx, msg, CorfuMsgType.TOKEN_RESPONSE.payloadMsg(
+        return CorfuMsgType.TOKEN_RESPONSE.payloadMsg(
                 new TokenResponse(currentTail,
                         backPointerMap.build(),
-                        requestStreamTokens.build())));
+                        requestStreamTokens.build()));
     }
 
     public void reset() {

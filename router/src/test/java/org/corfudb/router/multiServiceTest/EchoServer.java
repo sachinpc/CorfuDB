@@ -3,6 +3,7 @@ package org.corfudb.router.multiServiceTest;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.Getter;
 import org.corfudb.router.AbstractServer;
+import org.corfudb.router.IChannel;
 import org.corfudb.router.IServerRouter;
 import org.corfudb.router.ServerMsgHandler;
 
@@ -27,7 +28,7 @@ public class EchoServer extends AbstractServer<MultiServiceMsg<?>, MultiServiceM
     }
 
     @MultiServiceServerHandler(type=MultiServiceMsgType.ECHO_REQUEST)
-    MultiServiceMsg<String> echo(MultiServiceMsg<String> message, ChannelHandlerContext ctx) {
+    MultiServiceMsg<String> echo(MultiServiceMsg<String> message, IChannel<MultiServiceMsg<?>> ctx) {
         return ECHO_RESPONSE.getPayloadMsg(message.getPayload());
     }
 }

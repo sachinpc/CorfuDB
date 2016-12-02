@@ -532,7 +532,7 @@ public class LayoutServerTest extends AbstractServerTest {
     }
 
     private void sendCommitted(long epoch, Layout layout) {
-        sendMessage(CorfuMsgType.LAYOUT_COMMITTED_RESPONSE.payloadMsg(new LayoutCommittedRequest(epoch, layout)));
+        sendMessage(CorfuMsgType.LAYOUT_COMMITTED.payloadMsg(new LayoutCommittedRequest(epoch, layout)));
     }
 
     private void sendPrepare(UUID clientId, long epoch, long rank) {
@@ -544,6 +544,6 @@ public class LayoutServerTest extends AbstractServerTest {
     }
 
     private void sendCommitted(UUID clientId, long epoch, Layout layout) {
-        sendMessage(clientId, CorfuMsgType.LAYOUT_COMMITTED_RESPONSE.payloadMsg(new LayoutCommittedRequest(epoch, layout)));
+        sendMessage(clientId, CorfuMsgType.LAYOUT_COMMITTED.payloadMsg(new LayoutCommittedRequest(epoch, layout)));
     }
 }

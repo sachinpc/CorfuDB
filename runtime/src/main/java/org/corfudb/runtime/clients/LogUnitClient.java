@@ -7,6 +7,9 @@ import io.netty.channel.ChannelHandlerContext;
 import lombok.Getter;
 import lombok.Setter;
 import org.corfudb.protocols.wireprotocol.*;
+import org.corfudb.router.ClientMsgHandler;
+import org.corfudb.router.IRequestClientRouter;
+import org.corfudb.runtime.CorfuRuntime;
 import org.corfudb.runtime.exceptions.DataCorruptionException;
 import org.corfudb.runtime.exceptions.OutOfSpaceException;
 import org.corfudb.runtime.exceptions.OverwriteException;
@@ -26,16 +29,20 @@ import java.util.concurrent.CompletableFuture;
  * This class provides access to operations on a remote log unit.
  * Created by mwei on 12/10/15.
  */
-public class LogUnitClient implements IClient {
-
-    @Setter
-    @Getter
-    IClientRouter router;
+public class LogUnitClient extends AbstractEpochedClient {
 
     /** The handler and handlers which implement this client. */
     @Getter
-    public ClientMsgHandler msgHandler = new ClientMsgHandler(this)
-            .generateHandlers(MethodHandles.lookup(), this);
+    public ClientMsgHandler<CorfuMsg,CorfuMsgType> msgHandler =
+            new ClientMsgHandler<CorfuMsg,CorfuMsgType>(this)
+                    .generateHandlers(MethodHandles.lookup(), this,
+                            ClientHandler.class, ClientHandler::type);
+
+    public LogUnitClient(IRequestClientRouter<CorfuMsg, CorfuMsgType> router,
+                           CorfuRuntime runtime) {
+        super(router, runtime);
+    }
+
 
     /** Handle an WRITE_OK_RESPONSE message.
      *

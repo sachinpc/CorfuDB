@@ -15,7 +15,7 @@ public interface IServerRouter<M extends IRoutableMsg<T>, T> extends AutoCloseab
      * @param ctx       The context to send the response to.
      * @param outMsg    The outgoing message.
      */
-    void sendMessage(ChannelHandlerContext ctx, M outMsg);
+    void sendMessage(IChannel<M> ctx, M outMsg);
 
     /** Send a message, in response to a message.
      *
@@ -23,7 +23,7 @@ public interface IServerRouter<M extends IRoutableMsg<T>, T> extends AutoCloseab
      * @param inMsg     The message we are responding to.
      * @param outMsg    The outgoing message.
      */
-    void sendResponse(ChannelHandlerContext ctx, IRespondableMsg inMsg, IRespondableMsg outMsg);
+    void sendResponse(IChannel<M> ctx, IRespondableMsg inMsg, IRespondableMsg outMsg);
 
     /** Register a new server to route messages to, given
      * a function which generates a server from this router.

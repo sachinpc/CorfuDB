@@ -3,10 +3,7 @@ package org.corfudb.router.pingTest;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.corfudb.router.AbstractServer;
-import org.corfudb.router.IServer;
-import org.corfudb.router.IServerRouter;
-import org.corfudb.router.ServerMsgHandler;
+import org.corfudb.router.*;
 
 import java.lang.invoke.MethodHandles;
 
@@ -28,7 +25,7 @@ public class PingServer extends AbstractServer<PingMsg, PingMsgType> {
     }
 
     @PingServerHandler(type= PingMsgType.PING)
-    public PingMsg handlePing(PingMsg msg, ChannelHandlerContext ctx) {
+    public PingMsg handlePing(PingMsg msg, IChannel<PingMsg> ctx) {
         return PingMsgType.PONG.getMsg();
     }
 }

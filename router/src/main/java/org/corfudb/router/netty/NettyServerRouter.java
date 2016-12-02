@@ -16,10 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.corfudb.router.IRespondableMsg;
-import org.corfudb.router.IRoutableMsg;
-import org.corfudb.router.IServer;
-import org.corfudb.router.IServerRouter;
+import org.corfudb.router.*;
 
 import java.util.Map;
 import java.util.Optional;
@@ -33,7 +30,6 @@ import java.util.function.Supplier;
 @ChannelHandler.Sharable
 @RequiredArgsConstructor
 public class NettyServerRouter<M extends IRoutableMsg<T>, T>
-        extends ChannelInboundHandlerAdapter
         implements IServerRouter<M, T> {
 
     /**
@@ -87,8 +83,8 @@ public class NettyServerRouter<M extends IRoutableMsg<T>, T>
     public static <M extends IRoutableMsg<T>, T> Builder<M, T> builder() {return new Builder<>();}
 
     @Override
-    public void sendMessage(ChannelHandlerContext ctx, M outMsg) {
-        ctx.writeAndFlush(outMsg);
+    public void sendMessage(IChannel<M> ctx, M outMsg) {
+        ctx.sendMessage(outMsg);
     }
 
     /**
@@ -99,33 +95,9 @@ public class NettyServerRouter<M extends IRoutableMsg<T>, T>
      * @param outMsg The outgoing message.
      */
     @Override
-    public void sendResponse(ChannelHandlerContext ctx, IRespondableMsg inMsg, IRespondableMsg outMsg) {
+    public void sendResponse(IChannel<M> ctx, IRespondableMsg inMsg, IRespondableMsg outMsg) {
         inMsg.copyFieldsToResponse(outMsg);
         sendMessage(ctx, (M) outMsg);
-    }
-
-    /**
-     * Handle an incoming message read on the channel.
-     *
-     * @param ctx Channel handler context
-     * @param msg The incoming message on that channel.
-     */
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        try {
-            // The incoming message should have been transformed earlier in the pipeline.
-            M m = ((M) msg);
-            // We get the handler for this message from the map
-            IServer<M,T> handler = handlerMap.get(m.getMsgType());
-            if (handler == null) {
-                // The message was unregistered, we are dropping it.
-                log.warn("Received unregistered message {}, dropping", m);
-            } else {
-                    handler.handleMessage(m, ctx);
-            }
-        } catch (Exception e) {
-            log.error("Exception during read!", e);
-        }
     }
 
     /**
@@ -191,7 +163,7 @@ public class NettyServerRouter<M extends IRoutableMsg<T>, T>
                             ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
                             ch.pipeline().addLast(ee, decoderSupplier.get());
                             ch.pipeline().addLast(ee, encoderSupplier.get());
-                            ch.pipeline().addLast(ee, NettyServerRouter.this);
+                            ch.pipeline().addLast(ee, new NettyServerRouterChannel());
                         }
                     });
 
@@ -228,14 +200,51 @@ public class NettyServerRouter<M extends IRoutableMsg<T>, T>
         return this;
     }
 
-    /** Catch an exception handling an inbound message type.
-     *
-     * @param ctx       The context that encountered the error.
-     * @param cause     The reason for the error.
-     */
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("Error in handling inbound message, {}", cause);
-        ctx.close();
+    private class NettyServerRouterChannel
+            extends ChannelInboundHandlerAdapter {
+
+        NettyChannelWrapper<M> channelWrapper;
+
+        @Override
+        public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+            super.channelRegistered(ctx);
+            channelWrapper = new NettyChannelWrapper<M>(ctx);
+        }
+
+        /**
+         * Handle an incoming message read on the channel.
+         *
+         * @param ctx Channel handler context
+         * @param msg The incoming message on that channel.
+         */
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            try {
+                // The incoming message should have been transformed earlier in the pipeline.
+                M m = ((M) msg);
+                // We get the handler for this message from the map
+                IServer<M, T> handler = handlerMap.get(m.getMsgType());
+                if (handler == null) {
+                    // The message was unregistered, we are dropping it.
+                    log.warn("Received unregistered message {}, dropping", m);
+                } else {
+                    handler.handleMessage(m, channelWrapper);
+                }
+            } catch (Exception e) {
+                log.error("Exception during read!", e);
+            }
+        }
+
+
+        /** Catch an exception handling an inbound message type.
+         *
+         * @param ctx       The context that encountered the error.
+         * @param cause     The reason for the error.
+         */
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Error in handling inbound message, {}", cause);
+            ctx.close();
+        }
     }
 }

@@ -1,5 +1,7 @@
 package org.corfudb.router;
 
+import com.google.common.reflect.TypeToken;
+
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -30,7 +32,7 @@ public abstract class AbstractRequestClient<M extends IRoutableMsg<T> & IRespond
      *                  was a communication error.
      */
     protected CompletableFuture<M> sendMessageAndGetResponse(M outMsg) {
-        return sendMessageAndGetResponse(outMsg, null);
+        return getRequestRouter().sendMessageAndGetResponse(outMsg);
     }
 
     /** Send a message and get the response as a completable future,
@@ -45,5 +47,19 @@ public abstract class AbstractRequestClient<M extends IRoutableMsg<T> & IRespond
     protected <R extends M> CompletableFuture<R>
     sendMessageAndGetResponse(M outMsg, Class<R> responseType) {
         return getRequestRouter().sendMessageAndGetResponse(outMsg, responseType);
+    }
+
+    /** Send a message and get the response as a completable future,
+     * setting the lower bound for the return type using a type token.
+     * @param outMsg        The message to send.
+     * @param typeToken    The class of the type of the response message.
+     * @param <R>           The lower bound for the response message type.
+     * @return              A completed future which will be completed with
+     *                      the response, or completed exceptionally if there
+     *                      was a communication error.
+     */
+    protected <R extends M> CompletableFuture<R>
+    sendMessageAndGetResponse(M outMsg, TypeToken<R> typeToken) {
+        return getRequestRouter().sendMessageAndGetResponse(outMsg, typeToken);
     }
 }

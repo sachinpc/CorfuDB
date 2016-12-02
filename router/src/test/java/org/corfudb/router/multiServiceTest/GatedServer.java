@@ -3,6 +3,7 @@ package org.corfudb.router.multiServiceTest;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.Getter;
 import org.corfudb.router.AbstractPreconditionServer;
+import org.corfudb.router.IChannel;
 import org.corfudb.router.IServerRouter;
 import org.corfudb.router.PreconditionServerMsgHandler;
 
@@ -15,12 +16,13 @@ import static org.corfudb.router.multiServiceTest.MultiServiceMsgType.GATED_RESP
 /**
  * Created by mwei on 11/27/16.
  */
-public class GatedServer extends AbstractPreconditionServer<MultiServiceMsg<?>, MultiServiceMsgType>  {
+public class GatedServer extends
+        AbstractPreconditionServer<MultiServiceMsg<?>, MultiServiceMsgType, GatedServer>  {
 
     @Getter
     private final PreconditionServerMsgHandler<MultiServiceMsg<?>, MultiServiceMsgType>
             preconditionMsgHandler =
-            new PreconditionServerMsgHandler<>(this)
+            new PreconditionServerMsgHandler<MultiServiceMsg<?>, MultiServiceMsgType>(this)
             .generateHandlers(MethodHandles.lookup(), this,
                  MultiServiceServerHandler.class, MultiServiceServerHandler::type);
 
@@ -28,15 +30,15 @@ public class GatedServer extends AbstractPreconditionServer<MultiServiceMsg<?>, 
                        final GatewayServer gatewayServer)
     {
         // Only accept messages where the password is that of the supplied gateway server.
-        super(router, (msg, ctx, r) ->  {
+        super(router, (msg, ctx, server) ->  {
             if (gatewayServer.getGatewayPassword().equals(msg.getPassword())) return true;
-            r.sendResponse(ctx, msg, ERROR_WRONG_PASSWORD.getVoidMsg());
+            server.sendResponse(ctx, msg, ERROR_WRONG_PASSWORD.getVoidMsg());
             return false;
         });
     }
 
     @MultiServiceServerHandler(type=GATED_REQUEST)
-    MultiServiceMsg<String> gatedResponse(MultiServiceMsg<String> msg, ChannelHandlerContext ctx) {
+    MultiServiceMsg<String> gatedResponse(MultiServiceMsg<String> msg, IChannel<MultiServiceMsg<?>> ctx) {
         return GATED_RESPONSE.getPayloadMsg(msg.getPayload());
     }
 

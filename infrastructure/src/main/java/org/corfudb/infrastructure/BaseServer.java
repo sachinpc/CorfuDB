@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.corfudb.protocols.wireprotocol.*;
 import org.corfudb.router.AbstractServer;
+import org.corfudb.router.IChannel;
 import org.corfudb.router.IServerRouter;
 import org.corfudb.router.ServerMsgHandler;
 import org.corfudb.util.Utils;
@@ -42,7 +43,7 @@ public class BaseServer extends AbstractServer<CorfuMsg, CorfuMsgType> {
      * @param ctx   The channel context
      */
     @ServerHandler(type=CorfuMsgType.PING)
-    private static CorfuMsg ping(CorfuMsg msg, ChannelHandlerContext ctx) {
+    private static CorfuMsg ping(CorfuMsg msg, IChannel<CorfuMsg> ctx) {
         return CorfuMsgType.PONG_RESPONSE.msg();
     }
 
@@ -52,7 +53,7 @@ public class BaseServer extends AbstractServer<CorfuMsg, CorfuMsgType> {
      * @param ctx   The channel context
      */
     @ServerHandler(type=CorfuMsgType.VERSION_REQUEST)
-    private JSONPayloadMsg getVersion(CorfuMsg msg, ChannelHandlerContext ctx) {
+    private JSONPayloadMsg getVersion(CorfuMsg msg, IChannel<CorfuMsg> ctx) {
         VersionInfo vi = new VersionInfo(optionsMap);
         return new JSONPayloadMsg<>(vi, CorfuMsgType.VERSION_RESPONSE);
     }
@@ -65,7 +66,7 @@ public class BaseServer extends AbstractServer<CorfuMsg, CorfuMsgType> {
      * @param ctx   The channel context
      */
     @ServerHandler(type=CorfuMsgType.RESET)
-    private void doReset(CorfuMsg msg, ChannelHandlerContext ctx) {
+    private void doReset(CorfuMsg msg, IChannel<CorfuMsg> ctx) {
         log.warn("Remote reset requested from client " + msg.getClientID());
         sendResponse(ctx, msg, CorfuMsgType.ACK_RESPONSE.msg());
         Utils.sleepUninterruptibly(500); // Sleep, to make sure that all channels are flushed...

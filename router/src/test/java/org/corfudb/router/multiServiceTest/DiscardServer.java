@@ -3,6 +3,7 @@ package org.corfudb.router.multiServiceTest;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.Getter;
 import org.corfudb.router.AbstractServer;
+import org.corfudb.router.IChannel;
 import org.corfudb.router.IServerRouter;
 import org.corfudb.router.ServerMsgHandler;
 
@@ -32,7 +33,7 @@ public class DiscardServer extends AbstractServer<MultiServiceMsg<?>, MultiServi
     }
 
     @MultiServiceServerHandler(type=MultiServiceMsgType.DISCARD)
-    void discard(MultiServiceMsg<String> message, ChannelHandlerContext ctx) {
+    void discard(MultiServiceMsg<String> message, IChannel<MultiServiceMsg<?>> ctx) {
         discarded.complete(true);
     }
 }

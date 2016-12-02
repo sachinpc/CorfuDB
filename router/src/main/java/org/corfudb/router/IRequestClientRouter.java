@@ -1,5 +1,7 @@
 package org.corfudb.router;
 
+import com.google.common.reflect.TypeToken;
+
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -43,6 +45,21 @@ extends IClientRouter<M,T>
         return (CompletableFuture<R>) sendMessageAndGetResponse(outMsg);
     }
 
+    /** Send a message and get the response as a completable future,
+     * setting the lower bound for the return type using a type token.
+     * @param outMsg        The message to send.
+     * @param typeToken  The class of the type of the response message.
+     * @param <R>           The lower bound for the response message type.
+     * @return              A completed future which will be completed with
+     *                      the response, or completed exceptionally if there
+     *                      was a communication error.
+     */
+    @SuppressWarnings("unchecked")
+    default <R extends M> CompletableFuture<R>
+    sendMessageAndGetResponse(M outMsg, TypeToken<R> typeToken) {
+        return (CompletableFuture<R>) sendMessageAndGetResponse(outMsg);
+    }
+
     /** Send a message and get a response as a completable future,
      * timing out if the response isn't received in the given amount of time.
      * @param outMsg        The message to send.
@@ -70,6 +87,24 @@ extends IClientRouter<M,T>
     @SuppressWarnings("unchecked")
     default <R extends M> CompletableFuture<R>
     sendMessageAndGetResponse(M outMsg, Class<R> responseType, Duration timeout) {
+        return (CompletableFuture<R>) sendMessageAndGetResponse(outMsg, timeout);
+    }
+
+    /** Send a mesaage and get a response as a completable future,
+     * timing out if the response isn't received in the given amount of time
+     * and setting the lower bound for the return type using a type token.
+     * @param outMsg            The message to send.
+     * @param typeToken         The lower bound for the message which will be
+     *                          returned.
+     * @param timeout           The maximum amount of time to wait for a response
+     *                          before timing out with a TimeoutException.
+     * @param <R>               The type of the lower bound for the return.
+     * @return                  A completable future which will be completed with
+     *                          the response, or completed exceptionally if there
+     *                          was a communication error
+     */
+    default <R extends M> CompletableFuture<R>
+    sendMessageAndGetResponse(M outMsg, TypeToken<R> responseType, Duration timeout) {
         return (CompletableFuture<R>) sendMessageAndGetResponse(outMsg, timeout);
     }
 

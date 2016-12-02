@@ -8,7 +8,9 @@ import org.corfudb.router.IServerRouter;
 /**
  * Created by mwei on 11/29/16.
  */
-public abstract class AbstractEpochedServer extends AbstractPreconditionServer<CorfuMsg, CorfuMsgType> {
+public abstract class AbstractEpochedServer extends
+        AbstractPreconditionServer<CorfuMsg, CorfuMsgType,
+                AbstractEpochedServer> {
 
     public AbstractEpochedServer(IServerRouter<CorfuMsg, CorfuMsgType> router,
                                  ServerContext context) {

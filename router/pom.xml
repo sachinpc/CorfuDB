@@ -47,6 +47,9 @@
                                 <include>src/main/protobuf</include>
                                 <include>src/test/protobuf</include>
                             </inputDirectories>
+                            <outputDirectory>
+                                target/generated-test/sources
+                            </outputDirectory>
                         </configuration>
                     </execution>
                 </executions>

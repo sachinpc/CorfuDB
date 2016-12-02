@@ -3,6 +3,7 @@ package org.corfudb.router.multiServiceTest;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.Getter;
 import org.corfudb.router.AbstractServer;
+import org.corfudb.router.IChannel;
 import org.corfudb.router.IServerRouter;
 import org.corfudb.router.ServerMsgHandler;
 
@@ -32,7 +33,7 @@ public class GatewayServer extends AbstractServer<MultiServiceMsg<?>, MultiServi
     }
 
     @MultiServiceServerHandler(type=MultiServiceMsgType.GATEWAY_REQUEST)
-    MultiServiceMsg<String> getPassword(MultiServiceMsg<Void> message, ChannelHandlerContext ctx) {
+    MultiServiceMsg<String> getPassword(MultiServiceMsg<Void> message, IChannel<MultiServiceMsg<?>> ctx) {
         return GATEWAY_RESPONSE.getPayloadMsg(gatewayPassword);
     }
 }

@@ -30,7 +30,7 @@ public class PreconditionServerMsgHandler<M extends IRoutableMsg<T>, T> extends
      */
     @Override
     @SuppressWarnings("unchecked")
-    public boolean handle(M message, ChannelHandlerContext ctx) {
+    public boolean handle(M message, IChannel<M> ctx) {
         // check if the message meets the precondition first.
         if (preconditionServer.getPreconditionFunction().check(message,
                ctx, preconditionServer.getRouter())) {

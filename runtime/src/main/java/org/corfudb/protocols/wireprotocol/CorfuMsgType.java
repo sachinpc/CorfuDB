@@ -36,7 +36,7 @@ public enum CorfuMsgType implements IRespondableMsgType {
     LAYOUT_PREPARE_REJECT_ERROR(13, new TypeToken<CorfuPayloadMsg<LayoutPrepareResponse>>(){}),
     LAYOUT_PROPOSE(14, new TypeToken<CorfuPayloadMsg<LayoutProposeRequest>>(){}, true),
     LAYOUT_PROPOSE_REJECT_ERROR(15, new TypeToken<CorfuPayloadMsg<LayoutProposeResponse>>(){}),
-    LAYOUT_COMMITTED_RESPONSE(16, new TypeToken<CorfuPayloadMsg<LayoutCommittedRequest>>(){}, true),
+    LAYOUT_COMMITTED(16, new TypeToken<CorfuPayloadMsg<LayoutCommittedRequest>>(){}, true),
     LAYOUT_QUERY(17, new TypeToken<CorfuPayloadMsg<Long>>(){}),
     LAYOUT_BOOTSTRAP(18, new TypeToken<CorfuPayloadMsg<LayoutBootstrapRequest>>(){}, true),
     LAYOUT_NOBOOTSTRAP_ERROR(19, TypeToken.of(CorfuMsg.class), true),
