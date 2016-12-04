@@ -324,7 +324,10 @@ public class LogUnitServer extends AbstractServer {
 
     public synchronized void handleEviction(LogAddress address, LogData entry, RemovalCause cause) {
         log.trace("Eviction[{}]: {}", address, cause);
-        if (entry.getData() != null) {
+        if (entry.getData() != null &&
+                entry.getData().refCnt() > 0  // the refCnt check is needed.
+                                              // for some reason, Caffeine may invoke handleEviction multiple times with same entry
+            ) {
             // Free the internal buffer once the data has been evicted (in the case the server is not sync).
             entry.getData().release();
         }
